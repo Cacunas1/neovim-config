@@ -37,6 +37,11 @@ vim.opt.cmdheight = 0
 vim.opt.numberwidth = 4
 vim.opt.signcolumn = "yes"
 
+if vim.g.neovide then
+    -- Put anything you want to happen only in Neovide here
+    vim.o.guifont = "Source Code Pro:h12"
+    vim.g.neovide_transparency = 0.8
+end
 -------------------------------------------------------------------------------
 -- Keymap
 -------------------------------------------------------------------------------
@@ -172,14 +177,41 @@ require("lazy").setup({
             require('lsp-zero.cmp').extend()
 
             -- And you can configure cmp even more, if you want to.
+            local has_words_before = function()
+                unpack = unpack or table.unpack
+                local line, col = unpack(vim.api.nvim_win_get_cursor(0))
+                return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
+            end
+
+            local luasnip = require("luasnip")
             local cmp = require('cmp')
             local cmp_action = require('lsp-zero.cmp').action()
 
             cmp.setup({
                 mapping = {
-                    ['<C-Space>'] = cmp.mapping.complete(),
-                    ['<C-f>'] = cmp_action.luasnip_jump_forward(),
-                    ['<C-b>'] = cmp_action.luasnip_jump_backward(),
+                    ["<Tab>"] = cmp.mapping(function(fallback)
+                        if cmp.visible() then
+                            cmp.select_next_item()
+                            -- You could replace the expand_or_jumpable() calls with expand_or_locally_jumpable() 
+                            -- they way you will only jump inside the snippet region
+                        elseif luasnip.expand_or_jumpable() then
+                            luasnip.expand_or_jump()
+                        elseif has_words_before() then
+                            cmp.complete()
+                        else
+                            fallback()
+                        end
+                    end, { "i", "s" }),
+
+                    ["<S-Tab>"] = cmp.mapping(function(fallback)
+                        if cmp.visible() then
+                            cmp.select_prev_item()
+                        elseif luasnip.jumpable(-1) then
+                            luasnip.jump(-1)
+                        else
+                            fallback()
+                        end
+                    end, { "i", "s" }),
                 }
             })
         end
