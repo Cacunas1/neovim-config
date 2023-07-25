@@ -40,7 +40,7 @@ vim.opt.signcolumn = "yes"
 if vim.g.neovide then
     -- Put anything you want to happen only in Neovide here
     vim.o.guifont = "Source Code Pro:h12"
-    vim.g.neovide_transparency = 0.8
+    vim.g.neovide_transparency = 0.95
 end
 -------------------------------------------------------------------------------
 -- Keymap
@@ -212,7 +212,17 @@ require("lazy").setup({
                             fallback()
                         end
                     end, { "i", "s" }),
-                }
+                },
+                sources = {
+                    { name = "path" },
+                    { name = "nvim_lsp", keyword_length = 3 },
+                    { name = "nvim_lsp_signature_help" },
+                    { name = "nvim_lua", keyword_length = 2 },
+                    { name = "buffer", keyword_length = 2 },
+                    { name = "vsnip", keyword_length = 2 },
+                    { name = "calc" },
+                    { name = "crates" },
+                },
             })
         end
     },
@@ -248,6 +258,58 @@ require("lazy").setup({
             require('lspconfig').lua_ls.setup(lsp.nvim_lua_ls())
 
             lsp.setup()
+
+            local on_attach = require("lspconfig").on_attach
+            local capabilities = require("lspconfig").capabilities
+            local lspconfig = require("lspconfig")
+            local util = require "lspconfig/util"
+        end
+    },
+    "vim-airline/vim-airline",
+    "vim-airline/vim-airline-themes",
+    {
+        "saecki/crates.nvim",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        config = function()
+            require('crates').setup()
+        end,
+    },
+    {
+        "nvim-tree/nvim-tree.lua",
+        version = "*",
+        lazy = false,
+        dependencies = {
+            "nvim-tree/nvim-web-devicons",
+        },
+        config = function()
+            require("nvim-tree").setup {}
+        end,
+    },
+    {
+        "rust-lang/rust.vim",
+        ft = "rust",
+        init = function()
+            vim.g.rustfmt_autosave = 1
+        end
+    },
+    {
+        "simrat39/rust-tools.nvim",
+        ft = "rust",
+        dependencies = "neovim/nvim-lspconfig",
+        opts = function()
+            local on_attach = require("lspconfig").on_attach
+            local capabilities = require("lspconfig").capabilities
+
+            local options = {
+                server = {
+                    on_attach = on_attach,
+                    capabilities = capabilities,
+                }
+            }
+            return options
+        end,
+        config = function(_, opts)
+            require('rust-tools').setupt(opts)
         end
     },
 })
@@ -255,12 +317,4 @@ require("lazy").setup({
 --- More Options
 -------------------------------------------------------------------------------
 vim.cmd.colorscheme "catppuccin"
-vim.api.nvim_set_keymap(
-    "i", "<Tab>", "<cmd>lua vim.lsp.buf.select_next_item()<CR>",
-    {noremap = true}
-)
-vim.api.nvim_set_keymap(
-    "i", "<S-Tab>", "<cmd>lua vim.lsp.buf.select_prev_item()<CR>",
-    {noremap = true}
-)
 
